@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Hackatime for Figma</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #ffffff;
+      color: #1a1a1a;
+      font-size: 14px;
+      line-height: 1.4;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .plugin-container {
+      width: 420px;
+      min-height: 480px;
+      padding: 24px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+      border-bottom: 1px solid #f0f0f0;
+      padding-bottom: 16px;
+    }
+
+    .logo {
+      font-size: 18px;
+      font-weight: 700;
+      color: #ec3750;
+      margin-bottom: 4px;
+      letter-spacing: -0.5px;
+    }
+
+    .tagline {
+      color: #666;
+      font-size: 12px;
+      font-weight: 400;
+    }
+
+    .status-card {
+      background: #fafafa;
+      border: 1px solid #e8e8e8;
+      border-radius: 6px;
+      padding: 14px;
+      margin-bottom: 20px;
+      transition: all 0.2s ease;
+    }
+
+    .status-card.tracking {
+      background: #f0f9f4;
+      border-color: #22c55e;
+    }
+
+    .status-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+    }
+
+    .status-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: #666;
+    }
+
+    .status-label.active {
+      color: #16a34a;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      background: #ccc;
+      border-radius: 50%;
+      margin-right: 6px;
+    }
+
+    .status-dot.active {
+      background: #22c55e;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    .activity-text {
+      font-size: 11px;
+      color: #888;
+      font-family: 'SF Mono', Monaco, monospace;
+      line-height: 1.3;
+    }
+
+    .form-section {
+      margin-bottom: 20px;
+    }
+
+    .field-group {
+      margin-bottom: 14px;
+    }
+
+    .field-label {
+      display: block;
+      font-size: 12px;
+      font-weight: 500;
+      color: #333;
+      margin-bottom: 6px;
+    }
+
+    .field-input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 13px;
+      background: white;
+      transition: border-color 0.15s ease;
+    }
+
+    .field-input:focus {
+      outline: none;
+      border-color: #ec3750;
+      box-shadow: 0 0 0 2px rgba(236, 55, 80, 0.1);
+    }
+
+    .field-input.valid {
+      border-color: #22c55e;
+    }
+
+    .field-input.invalid {
+      border-color: #ef4444;
+    }
+
+    .field-help {
+      font-size: 11px;
+      color: #888;
+      margin-top: 4px;
+    }
+
+    .field-error {
+      font-size: 11px;
+      color: #ef4444;
+      margin-top: 4px;
+    }
+
+    .field-success {
+      font-size: 11px;
+      color: #22c55e;
+      margin-top: 4px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 10px 14px;
+      border: none;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: #ec3750;
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: #d63447;
+    }
+
+    .btn-secondary {
+      background: #f5f5f5;
+      color: #666;
+      border: 1px solid #e0e0e0;
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: #eeeeee;
+      border-color: #d0d0d0;
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: #666;
+      border: 1px solid #ddd;
+    }
+
+    .btn-outline:hover:not(:disabled) {
+      border-color: #ccc;
+      background: #fafafa;
+    }
+
+    .notification {
+      padding: 10px 12px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+      font-size: 12px;
+      display: none;
+    }
+
+    .notification.success {
+      background: #f0f9f4;
+      color: #16a34a;
+      border: 1px solid #dcfce7;
+    }
+
+    .notification.error {
+      background: #fef2f2;
+      color: #dc2626;
+      border: 1px solid #fecaca;
+    }
+
+    .notification.info {
+      background: #f0f9ff;
+      color: #2563eb;
+      border: 1px solid #dbeafe;
+    }
+
+    .controls-section {
+      margin-bottom: 20px;
+    }
+
+    .help-section {
+      background: #f9f9f9;
+      border-radius: 4px;
+      padding: 12px;
+      margin-top: 20px;
+    }
+
+    .help-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    .help-steps {
+      font-size: 11px;
+      color: #666;
+      line-height: 1.4;
+    }
+
+    .help-steps ol {
+      padding-left: 16px;
+      margin: 0;
+    }
+
+    .help-steps li {
+      margin-bottom: 3px;
+    }
+
+    .help-link {
+      color: #ec3750;
+      text-decoration: none;
+    }
+
+    .help-link:hover {
+      text-decoration: underline;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s ease-in-out infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .footer {
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px solid #f0f0f0;
+      text-align: center;
+    }
+
+    .footer-text {
+      font-size: 10px;
+      color: #999;
+      line-height: 1.3;
+    }
+
+    .footer-link {
+      color: #666;
+      text-decoration: none;
+    }
+
+    .footer-link:hover {
+      color: #ec3750;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* Compact mode for smaller plugin window */
+    @media (max-height: 500px) {
+      .plugin-container { padding: 16px; }
+      .header { margin-bottom: 16px; }
+      .form-section, .controls-section { margin-bottom: 16px; }
+      .help-section { margin-top: 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="plugin-container">
+    <div class="header">
+      <div class="logo">Hackatime</div>
+      <div class="tagline">Track your Figma design time</div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <div class="status-card" id="statusCard">
+      <div class="status-header">
+        <div class="status-label" id="statusLabel">
+          <span class="status-dot" id="statusDot"></span>
+          Not tracking
+        </div>
+      </div>
+      <div class="activity-text" id="activityText">
+        Configure your settings below to get started
+      </div>
+    </div>
+
+    <div class="form-section">
+      <div class="field-group">
+        <label class="field-label" for="apiKey">API Key</label>
+        <input type="text" 
+               id="apiKey" 
+               class="field-input" 
+               placeholder="Your Hackatime API key"
+               autocomplete="off">
+        <div class="field-help" id="apiKeyHelp">
+          Find this in your Hackatime dashboard settings
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="serverUrl">Server URL</label>
+        <input type="text" 
+               id="serverUrl" 
+               class="field-input" 
+               value="https://hackatime.hackclub.com"
+               placeholder="https://hackatime.hackclub.com">
+        <div class="field-help" id="serverUrlHelp">
+          Default Hack Club server or your custom instance
+        </div>
+      </div>
+
+      <button class="btn btn-outline" id="testBtn" onclick="testConnection()">
+        Test Connection
+      </button>
+    </div>
+
+    <div class="controls-section">
+      <button class="btn btn-primary" id="startBtn" onclick="startTracking()">
+        Start Tracking
+      </button>
+      
+      <button class="btn btn-secondary hidden" id="stopBtn" onclick="stopTracking()">
+        Stop Tracking
+      </button>
+
+      <button class="btn btn-secondary" onclick="saveSettings()">
+        Save Settings
+      </button>
+    </div>
+
+    <div class="help-section">
+      <div class="help-title">Quick Setup</div>
+      <div class="help-steps">
+        <ol>
+          <li>Visit <a href="https://hackatime.hackclub.com" target="_blank" class="help-link">hackatime.hackclub.com</a></li>
+          <li>Create account or sign in</li>
+          <li>Copy API key from Settings</li>
+          <li>Paste above and test connection</li>
+          <li>Start tracking your design time!</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="footer-text">
+        Made by <a href="https://github.com/basanta-bhandari" target="_blank" class="footer-link">Basanta Bhandari</a><br>
+        <a href="mailto:bhandari.basanta.47@gmail.com" class="footer-link">bhandari.basanta.47@gmail.com</a>
+      </div>
+    </div>
+  </div>
+
+ <script>
+    let isTracking = false;
+    let currentSettings = { apiKey: '', serverUrl: 'https://hackatime.hackclub.com' };
+
+    // Initialize
+    window.onload = function() {
+      parent.postMessage({ pluginMessage: { type: 'get-settings' } }, '*');
+      
+      // Live validation
+      document.getElementById('apiKey').addEventListener('input', validateApiKey);
+      document.getElementById('serverUrl').addEventListener('input', validateServerUrl);
+    };
+
+    // Handle plugin messages
+    window.onmessage = (event) => {
+      const msg = event.data.pluginMessage;
+      
+      switch (msg.type) {
+        case 'settings-loaded':
+          currentSettings = msg.settings;
+          document.getElementById('apiKey').value = msg.settings.apiKey || '';
+          document.getElementById('serverUrl').value = msg.settings.serverUrl || 'https://hackatime.hackclub.com';
+          validateForm();
+          break;
+
+        case 'testing-connection':
+          setButtonLoading('testBtn', true, 'Testing...');
+          showNotification('Testing connection...', 'info');
+          break;
+
+        case 'connection-tested':
+          setButtonLoading('testBtn', false, 'Test Connection');
+          if (msg.success) {
+            showNotification(msg.message || 'Connection successful!', 'success');
+            setFieldState('apiKey', 'valid');
+            setFieldState('serverUrl', 'valid');
+          } else {
+            showNotification(msg.message || 'Connection failed', 'error');
+            setFieldState('apiKey', 'invalid');
+          }
+          break;
+
+        case 'tracking-started':
+          isTracking = true;
+          updateTrackingUI(true);
+          setButtonLoading('startBtn', false, 'Start Tracking');
+          showNotification('Tracking started!', 'success');
+          break;
+
+        case 'tracking-stopped':
+          isTracking = false;
+          updateTrackingUI(false);
+          showNotification('Tracking stopped', 'info');
+          break;
+
+        case 'settings-saved':
+          showNotification('Settings saved', 'success');
+          break;
+
+        case 'heartbeat-sent':
+          updateActivity(msg.message, msg.category);
+          break;
+
+        case 'heartbeat-error':
+          updateActivity('Error: ' + msg.message, 'error');
+          break;
+
+        case 'error':
+          showNotification(msg.message, 'error');
+          setButtonLoading('startBtn', false, 'Start Tracking');
+          setButtonLoading('testBtn', false, 'Test Connection');
+          break;
+      }
+    };
+
+    function validateApiKey() {
+      const input = document.getElementById('apiKey');
+      const value = input.value.trim();
+      
+      if (!value) {
+        setFieldState('apiKey', 'invalid', 'API key is required');
+        return false;
+      } else if (value.length < 36) {
+        setFieldState('apiKey', 'invalid', 'This doesn\'t look like a valid API key');
+        return false;
+      } else {
+        setFieldState('apiKey', 'valid', 'Looks good');
+        return true;
+      }
+    }
+
+    function validateServerUrl() {
+      const input = document.getElementById('serverUrl');
+      const value = input.value.trim();
+      
+      if (!value) {
+        setFieldState('serverUrl', 'invalid', 'Server URL is required');
+        return false;
+      }
+      
+      try {
+        new URL(value);
+        setFieldState('serverUrl', 'valid', 'Valid URL');
+        return true;
+      } catch {
+        setFieldState('serverUrl', 'invalid', 'Invalid URL format');
+        return false;
+      }
+    }
+
+    function validateForm() {
+      return validateApiKey() && validateServerUrl();
+    }
+
+    function setFieldState(fieldId, state, message = '') {
+      const input = document.getElementById(fieldId);
+      const help = document.getElementById(fieldId + 'Help');
+      
+      input.classList.remove('valid', 'invalid');
+      
+      if (state === 'valid') {
+        input.classList.add('valid');
+        help.textContent = message || help.textContent;
+        help.className = 'field-success';
+      } else if (state === 'invalid') {
+        input.classList.add('invalid');
+        help.textContent = message;
+        help.className = 'field-error';
+      } else {
+        help.className = 'field-help';
+      }
+    }
+
+    function setButtonLoading(btnId, loading, text) {
+      const btn = document.getElementById(btnId);
+      btn.disabled = loading;
+      
+      if (loading) {
+        btn.innerHTML = `<span class="spinner"></span>${text}`;
+      } else {
+        btn.textContent = text;
+      }
+    }
+
+    function showNotification(message, type) {
+      const notification = document.getElementById('notification');
+      notification.className = `notification ${type}`;
+      notification.textContent = message;
+      notification.style.display = 'block';
+      
+      setTimeout(() => {
+        notification.style.display = 'none';
+      }, 4000);
+    }
+
+    function updateTrackingUI(tracking) {
+      const card = document.getElementById('statusCard');
+      const label = document.getElementById('statusLabel');
+      const dot = document.getElementById('statusDot');
+      const startBtn = document.getElementById('startBtn');
+      const stopBtn = document.getElementById('stopBtn');
+      
+      if (tracking) {
+        card.className = 'status-card tracking';
+        label.className = 'status-label active';
+        label.innerHTML = '<span class="status-dot active" id="statusDot"></span>Tracking active';
+        startBtn.classList.add('hidden');
+        stopBtn.classList.remove('hidden');
+      } else {
+        card.className = 'status-card';
+        label.className = 'status-label';
+        label.innerHTML = '<span class="status-dot" id="statusDot"></span>Not tracking';
+        startBtn.classList.remove('hidden');
+        stopBtn.classList.add('hidden');
+      }
+    }
+
+    function updateActivity(message, category) {
+      const activity = document.getElementById('activityText');
+      const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+      
+      let prefix = '';
+      if (category === 'building') prefix = 'editing';
+      else if (category === 'debugging') prefix = 'navigating';
+      else if (category === 'designing') prefix = 'active';
+      else prefix = 'activity';
+      
+      activity.textContent = `${timestamp} - ${prefix}: ${message}`;
+    }
+
+    // Plugin actions
+    function testConnection() {
+      if (!validateForm()) {
+        showNotification('Please fix the errors above', 'error');
+        return;
+      }
+      
+      const settings = {
+        apiKey: document.getElementById('apiKey').value.trim(),
+        serverUrl: document.getElementById('serverUrl').value.trim()
+      };
+      
+      parent.postMessage({ 
+        pluginMessage: { 
+          type: 'test-connection', 
+          settings: settings 
+        } 
+      }, '*');
+    }
+
+    function startTracking() {
+      if (!validateForm()) {
+        showNotification('Please configure your settings first', 'error');
+        return;
+      }
+      
+      setButtonLoading('startBtn', true, 'Starting...');
+      
+      const settings = {
+        apiKey: document.getElementById('apiKey').value.trim(),
+        serverUrl: document.getElementById('serverUrl').value.trim()
+      };
+      
+      parent.postMessage({ 
+        pluginMessage: { 
+          type: 'start-tracking', 
+          settings: settings 
+        } 
+      }, '*');
+    }
+
+    function stopTracking() {
+      parent.postMessage({ pluginMessage: { type: 'stop-tracking' } }, '*');
+    }
+
+    function saveSettings() {
+      if (!validateForm()) {
+        showNotification('Please fix the errors first', 'error');
+        return;
+      }
+      
+      const settings = {
+        apiKey: document.getElementById('apiKey').value.trim(),
+        serverUrl: document.getElementById('serverUrl').value.trim()
+      };
+      
+      parent.postMessage({ 
+        pluginMessage: { 
+          type: 'save-settings', 
+          settings: settings 
+        } 
+      }, '*');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "Hackatime for Figma",
+  "id": "hackatime-figma-plugin",
+  "api": "1.0.0",
+  "main": "script.js",
+  "ui": "index.html",
+  "capabilities": [],
+  "enableProposedApi": false,
+  "editorType": [
+    "figma"
+  ],
+  "networkAccess": {
+    "allowedDomains": [
+      "https://hackatime.hackclub.com",
+      "https://*.hackclub.com"
+    ],
+    "reasoning": "Plugin needs to send activity data to Hackatime server for time tracking"
+  }
+}
