@@ -71,6 +71,8 @@
       font-size: 13px;
       font-weight: 500;
       color: #666;
+      display: flex;
+      align-items: center;
     }
 
     .status-label.active {
@@ -100,6 +102,7 @@
       color: #888;
       font-family: 'SF Mono', Monaco, monospace;
       line-height: 1.3;
+      min-height: 16px;
     }
 
     .form-section {
@@ -320,176 +323,251 @@
       display: none !important;
     }
 
-    /* Compact mode for smaller plugin window */
-    @media (max-height: 500px) {
-      .plugin-container { padding: 16px; }
-      .header { margin-bottom: 16px; }
-      .form-section, .controls-section { margin-bottom: 16px; }
-      .help-section { margin-top: 16px; }
+    .loading-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #666;
     }
   </style>
 </head>
 <body>
   <div class="plugin-container">
-    <div class="header">
-      <div class="logo">Hackatime</div>
-      <div class="tagline">Track your Figma design time</div>
+    <div id="loadingState" class="loading-state">
+      <div class="spinner" style="border-color: #ddd; border-top-color: #ec3750; margin: 0 auto 12px;"></div>
+      <div>Loading plugin...</div>
     </div>
 
-    <div id="notification" class="notification"></div>
+    <div id="mainContent" class="hidden">
+      <div class="header">
+        <div class="logo">Hackatime</div>
+        <div class="tagline">Track your Figma design time</div>
+      </div>
 
-    <div class="status-card" id="statusCard">
-      <div class="status-header">
-        <div class="status-label" id="statusLabel">
-          <span class="status-dot" id="statusDot"></span>
-          Not tracking
+      <div id="notification" class="notification"></div>
+
+      <div class="status-card" id="statusCard">
+        <div class="status-header">
+          <div class="status-label" id="statusLabel">
+            <span class="status-dot" id="statusDot"></span>
+            Not tracking
+          </div>
         </div>
-      </div>
-      <div class="activity-text" id="activityText">
-        Configure your settings below to get started
-      </div>
-    </div>
-
-    <div class="form-section">
-      <div class="field-group">
-        <label class="field-label" for="apiKey">API Key</label>
-        <input type="text" 
-               id="apiKey" 
-               class="field-input" 
-               placeholder="Your Hackatime API key"
-               autocomplete="off">
-        <div class="field-help" id="apiKeyHelp">
-          Find this in your Hackatime dashboard settings
+        <div class="activity-text" id="activityText">
+          Configure your settings below to get started
         </div>
       </div>
 
-      <div class="field-group">
-        <label class="field-label" for="serverUrl">Server URL</label>
-        <input type="text" 
-               id="serverUrl" 
-               class="field-input" 
-               value="https://hackatime.hackclub.com"
-               placeholder="https://hackatime.hackclub.com">
-        <div class="field-help" id="serverUrlHelp">
-          Default Hack Club server or your custom instance
+      <div class="form-section">
+        <div class="field-group">
+          <label class="field-label" for="apiKey">API Key</label>
+          <input type="text" 
+                 id="apiKey" 
+                 class="field-input" 
+                 placeholder="Your Hackatime API key"
+                 autocomplete="off">
+          <div class="field-help" id="apiKeyHelp">
+            Find this in your Hackatime dashboard settings
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label class="field-label" for="serverUrl">Server URL</label>
+          <input type="text" 
+                 id="serverUrl" 
+                 class="field-input" 
+                 value="https://hackatime.hackclub.com"
+                 placeholder="https://hackatime.hackclub.com">
+          <div class="field-help" id="serverUrlHelp">
+            Default Hack Club server or your custom instance
+          </div>
+        </div>
+
+        <button class="btn btn-outline" id="testBtn" onclick="testConnection()">
+          Test Connection
+        </button>
+      </div>
+
+      <div class="controls-section">
+        <button class="btn btn-primary" id="startBtn" onclick="startTracking()">
+          Start Tracking
+        </button>
+        
+        <button class="btn btn-secondary hidden" id="stopBtn" onclick="stopTracking()">
+          Stop Tracking
+        </button>
+
+        <button class="btn btn-secondary" onclick="saveSettings()">
+          Save Settings
+        </button>
+      </div>
+
+      <div class="help-section">
+        <div class="help-title">Quick Setup</div>
+        <div class="help-steps">
+          <ol>
+            <li>Visit <a href="#" class="help-link">hackatime.hackclub.com</a></li>
+            <li>Create account or sign in</li>
+            <li>Copy API key from Settings</li>
+            <li>Paste above and test connection</li>
+            <li>Start tracking your design time!</li>
+          </ol>
         </div>
       </div>
 
-      <button class="btn btn-outline" id="testBtn" onclick="testConnection()">
-        Test Connection
-      </button>
-    </div>
-
-    <div class="controls-section">
-      <button class="btn btn-primary" id="startBtn" onclick="startTracking()">
-        Start Tracking
-      </button>
-      
-      <button class="btn btn-secondary hidden" id="stopBtn" onclick="stopTracking()">
-        Stop Tracking
-      </button>
-
-      <button class="btn btn-secondary" onclick="saveSettings()">
-        Save Settings
-      </button>
-    </div>
-
-    <div class="help-section">
-      <div class="help-title">Quick Setup</div>
-      <div class="help-steps">
-        <ol>
-          <li>Visit <a href="https://hackatime.hackclub.com" target="_blank" class="help-link">hackatime.hackclub.com</a></li>
-          <li>Create account or sign in</li>
-          <li>Copy API key from Settings</li>
-          <li>Paste above and test connection</li>
-          <li>Start tracking your design time!</li>
-        </ol>
-      </div>
-    </div>
-
-    <div class="footer">
-      <div class="footer-text">
-        Made by <a href="https://github.com/basanta-bhandari" target="_blank" class="footer-link">Basanta Bhandari</a><br>
-        <a href="mailto:bhandari.basanta.47@gmail.com" class="footer-link">bhandari.basanta.47@gmail.com</a>
+      <div class="footer">
+        <div class="footer-text">
+          Made by <a href="#" class="footer-link">Basanta Bhandari</a><br>
+          <a href="#" class="footer-link">bhandari.basanta.47@gmail.com</a>
+        </div>
       </div>
     </div>
   </div>
 
- <script>
+  <script>
     let isTracking = false;
     let currentSettings = { apiKey: '', serverUrl: 'https://hackatime.hackclub.com' };
 
-    // Initialize
-    window.onload = function() {
+    // Initialize when page loads
+    window.addEventListener('load', function() {
+      console.log('UI loaded, requesting settings...');
       parent.postMessage({ pluginMessage: { type: 'get-settings' } }, '*');
-      
-      // Live validation
-      document.getElementById('apiKey').addEventListener('input', validateApiKey);
-      document.getElementById('serverUrl').addEventListener('input', validateServerUrl);
-    };
+    });
 
-    // Handle plugin messages
-    window.onmessage = (event) => {
+    // Handle messages from plugin
+    window.addEventListener('message', function(event) {
       const msg = event.data.pluginMessage;
+      if (!msg) return;
+      
+      console.log('UI received message:', msg.type);
       
       switch (msg.type) {
         case 'settings-loaded':
-          currentSettings = msg.settings;
-          document.getElementById('apiKey').value = msg.settings.apiKey || '';
-          document.getElementById('serverUrl').value = msg.settings.serverUrl || 'https://hackatime.hackclub.com';
-          validateForm();
+          handleSettingsLoaded(msg.settings);
           break;
 
         case 'testing-connection':
-          setButtonLoading('testBtn', true, 'Testing...');
-          showNotification('Testing connection...', 'info');
+          handleTestingConnection();
           break;
 
         case 'connection-tested':
-          setButtonLoading('testBtn', false, 'Test Connection');
-          if (msg.success) {
-            showNotification(msg.message || 'Connection successful!', 'success');
-            setFieldState('apiKey', 'valid');
-            setFieldState('serverUrl', 'valid');
-          } else {
-            showNotification(msg.message || 'Connection failed', 'error');
-            setFieldState('apiKey', 'invalid');
-          }
+          handleConnectionTested(msg.success, msg.message);
           break;
 
         case 'tracking-started':
-          isTracking = true;
-          updateTrackingUI(true);
-          setButtonLoading('startBtn', false, 'Start Tracking');
-          showNotification('Tracking started!', 'success');
+          handleTrackingStarted();
           break;
 
         case 'tracking-stopped':
-          isTracking = false;
-          updateTrackingUI(false);
-          showNotification('Tracking stopped', 'info');
+          handleTrackingStopped();
           break;
 
         case 'settings-saved':
-          showNotification('Settings saved', 'success');
+          handleSettingsSaved();
           break;
 
-        case 'heartbeat-sent':
-          updateActivity(msg.message, msg.category);
+        case 'activity-detected':
+          handleActivityDetected(msg.project, msg.time);
+          break;
+
+        case 'project-changed':
+          handleProjectChanged(msg.project);
+          break;
+
+        case 'heartbeat-success':
+          handleHeartbeatSuccess(msg.message, msg.totalMinutes);
           break;
 
         case 'heartbeat-error':
-          updateActivity('Error: ' + msg.message, 'error');
+          handleHeartbeatError(msg.message);
           break;
 
         case 'error':
-          showNotification(msg.message, 'error');
-          setButtonLoading('startBtn', false, 'Start Tracking');
-          setButtonLoading('testBtn', false, 'Test Connection');
+          handleError(msg.message);
           break;
-      }
-    };
 
+        default:
+          console.log('Unknown message type:', msg.type);
+      }
+    });
+
+    function handleSettingsLoaded(settings) {
+      currentSettings = settings;
+      document.getElementById('apiKey').value = settings.apiKey || '';
+      document.getElementById('serverUrl').value = settings.serverUrl || 'https://hackatime.hackclub.com';
+      
+      // Hide loading, show main content
+      document.getElementById('loadingState').classList.add('hidden');
+      document.getElementById('mainContent').classList.remove('hidden');
+      
+      validateForm();
+      console.log('Settings loaded and UI shown');
+    }
+
+    function handleTestingConnection() {
+      setButtonLoading('testBtn', true, 'Testing...');
+      showNotification('Testing connection...', 'info');
+    }
+
+    function handleConnectionTested(success, message) {
+      setButtonLoading('testBtn', false, 'Test Connection');
+      if (success) {
+        showNotification(message || 'Connection successful!', 'success');
+        setFieldState('apiKey', 'valid');
+        setFieldState('serverUrl', 'valid');
+      } else {
+        showNotification(message || 'Connection failed', 'error');
+        setFieldState('apiKey', 'invalid');
+      }
+    }
+
+    function handleTrackingStarted() {
+      isTracking = true;
+      updateTrackingUI(true);
+      setButtonLoading('startBtn', false, 'Start Tracking');
+      showNotification('Tracking started!', 'success');
+    }
+
+    function handleTrackingStopped() {
+      isTracking = false;
+      updateTrackingUI(false);
+      showNotification('Tracking stopped', 'info');
+      updateActivity('Tracking stopped', 'info');
+    }
+
+    function handleSettingsSaved() {
+      showNotification('Settings saved', 'success');
+    }
+
+    function handleActivityDetected(project, time) {
+      updateActivity(`${time} - Activity detected: ${project}`, 'active');
+    }
+
+    function handleProjectChanged(project) {
+      updateActivity(`Switched to project: ${project}`, 'info');
+    }
+
+    function handleHeartbeatSuccess(message, totalMinutes) {
+      updateActivity(message, 'success');
+      if (totalMinutes !== undefined) {
+        const statusText = document.getElementById('statusLabel');
+        if (statusText && isTracking) {
+          statusText.innerHTML = `<span class="status-dot active"></span>Tracking active (${totalMinutes}m total)`;
+        }
+      }
+    }
+
+    function handleHeartbeatError(message) {
+      updateActivity(`Error: ${message}`, 'error');
+      showNotification(message, 'error');
+    }
+
+    function handleError(message) {
+      showNotification(message, 'error');
+      setButtonLoading('startBtn', false, 'Start Tracking');
+      setButtonLoading('testBtn', false, 'Test Connection');
+    }
+
+    // Validation functions
     function validateApiKey() {
       const input = document.getElementById('apiKey');
       const value = input.value.trim();
@@ -497,7 +575,7 @@
       if (!value) {
         setFieldState('apiKey', 'invalid', 'API key is required');
         return false;
-      } else if (value.length < 36) {
+      } else if (value.length < 20) {
         setFieldState('apiKey', 'invalid', 'This doesn\'t look like a valid API key');
         return false;
       } else {
@@ -526,12 +604,17 @@
     }
 
     function validateForm() {
-      return validateApiKey() && validateServerUrl();
+      const apiKeyValid = validateApiKey();
+      const serverUrlValid = validateServerUrl();
+      return apiKeyValid && serverUrlValid;
     }
 
+    // UI helper functions
     function setFieldState(fieldId, state, message = '') {
       const input = document.getElementById(fieldId);
       const help = document.getElementById(fieldId + 'Help');
+      
+      if (!input || !help) return;
       
       input.classList.remove('valid', 'invalid');
       
@@ -550,6 +633,8 @@
 
     function setButtonLoading(btnId, loading, text) {
       const btn = document.getElementById(btnId);
+      if (!btn) return;
+      
       btn.disabled = loading;
       
       if (loading) {
@@ -561,32 +646,35 @@
 
     function showNotification(message, type) {
       const notification = document.getElementById('notification');
+      if (!notification) return;
+      
       notification.className = `notification ${type}`;
       notification.textContent = message;
       notification.style.display = 'block';
       
       setTimeout(() => {
         notification.style.display = 'none';
-      }, 4000);
+      }, 5000);
     }
 
     function updateTrackingUI(tracking) {
       const card = document.getElementById('statusCard');
       const label = document.getElementById('statusLabel');
-      const dot = document.getElementById('statusDot');
       const startBtn = document.getElementById('startBtn');
       const stopBtn = document.getElementById('stopBtn');
+      
+      if (!card || !label || !startBtn || !stopBtn) return;
       
       if (tracking) {
         card.className = 'status-card tracking';
         label.className = 'status-label active';
-        label.innerHTML = '<span class="status-dot active" id="statusDot"></span>Tracking active';
+        label.innerHTML = '<span class="status-dot active"></span>Tracking active';
         startBtn.classList.add('hidden');
         stopBtn.classList.remove('hidden');
       } else {
         card.className = 'status-card';
         label.className = 'status-label';
-        label.innerHTML = '<span class="status-dot" id="statusDot"></span>Not tracking';
+        label.innerHTML = '<span class="status-dot"></span>Not tracking';
         startBtn.classList.remove('hidden');
         stopBtn.classList.add('hidden');
       }
@@ -594,18 +682,18 @@
 
     function updateActivity(message, category) {
       const activity = document.getElementById('activityText');
+      if (!activity) return;
+      
       const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+      activity.textContent = `${timestamp} - ${message}`;
       
-      let prefix = '';
-      if (category === 'building') prefix = 'editing';
-      else if (category === 'debugging') prefix = 'navigating';
-      else if (category === 'designing') prefix = 'active';
-      else prefix = 'activity';
-      
-      activity.textContent = `${timestamp} - ${prefix}: ${message}`;
+      // Add some visual feedback based on category
+      activity.style.color = category === 'error' ? '#dc2626' : 
+                           category === 'success' ? '#16a34a' : 
+                           category === 'info' ? '#2563eb' : '#888';
     }
 
-    // Plugin actions
+    // Action functions
     function testConnection() {
       if (!validateForm()) {
         showNotification('Please fix the errors above', 'error');
@@ -668,6 +756,22 @@
         } 
       }, '*');
     }
+
+    // Add live validation
+    document.addEventListener('DOMContentLoaded', function() {
+      const apiKeyInput = document.getElementById('apiKey');
+      const serverUrlInput = document.getElementById('serverUrl');
+      
+      if (apiKeyInput) {
+        apiKeyInput.addEventListener('input', validateApiKey);
+        apiKeyInput.addEventListener('blur', validateApiKey);
+      }
+      
+      if (serverUrlInput) {
+        serverUrlInput.addEventListener('input', validateServerUrl);
+        serverUrlInput.addEventListener('blur', validateServerUrl);
+      }
+    });
   </script>
 </body>
 </html>

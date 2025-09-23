@@ -6,17 +6,54 @@ let totalTime = 0;
 let apiKey = '';
 let serverUrl = 'https://hackatime.hackclub.com';
 let heartbeatInterval = null;
-let settings = { apiKey: '', serverUrl: 'https://hackatime.hackclub.com' };
 
-// Show the UI immediately
-figma.showUI(__html__, { width: 420, height: 600 });
+// Show UI immediately when plugin starts
+figma.showUI(__html__, { 
+  width: 420, 
+  height: 600,
+  title: 'Hackatime for Figma'
+});
+
+// Initialize plugin
+async function init() {
+  try {
+    // Load saved settings
+    const savedApiKey = await figma.clientStorage.getAsync('hackatime_api_key');
+    const savedServerUrl = await figma.clientStorage.getAsync('hackatime_server_url');
+    
+    apiKey = savedApiKey || '';
+    serverUrl = savedServerUrl || 'https://hackatime.hackclub.com';
+    
+    // Send settings to UI
+    figma.ui.postMessage({
+      type: 'settings-loaded',
+      settings: {
+        apiKey: apiKey,
+        serverUrl: serverUrl
+      }
+    });
+    
+    // Get current project name
+    currentProject = figma.root.name || 'Untitled';
+    
+    console.log('Hackatime plugin initialized');
+  } catch (error) {
+    console.error('Error initializing plugin:', error);
+    figma.ui.postMessage({
+      type: 'error',
+      message: 'Failed to initialize plugin: ' + error.message
+    });
+  }
+}
 
 // Handle messages from UI
 figma.ui.onmessage = async (msg) => {
   try {
+    console.log('Received message:', msg.type);
+    
     switch (msg.type) {
       case 'get-settings':
-        await loadSettings();
+        await init();
         break;
         
       case 'test-connection':
@@ -28,7 +65,7 @@ figma.ui.onmessage = async (msg) => {
         break;
         
       case 'stop-tracking':
-        stopTracking();
+        await stopTracking();
         break;
         
       case 'save-settings':
@@ -42,70 +79,50 @@ figma.ui.onmessage = async (msg) => {
     console.error('Error handling message:', error);
     figma.ui.postMessage({
       type: 'error',
-      message: error.message || 'An error occurred'
+      message: 'Plugin error: ' + (error.message || 'Unknown error')
     });
   }
 };
 
-async function loadSettings() {
-  try {
-    const savedApiKey = await figma.clientStorage.getAsync('hackatime_api_key');
-    const savedServerUrl = await figma.clientStorage.getAsync('hackatime_server_url');
-    
-    settings = {
-      apiKey: savedApiKey || '',
-      serverUrl: savedServerUrl || 'https://hackatime.hackclub.com'
-    };
-    
-    apiKey = settings.apiKey;
-    serverUrl = settings.serverUrl;
-    
-    figma.ui.postMessage({
-      type: 'settings-loaded',
-      settings: settings
-    });
-    
-    // Auto-start tracking if we have valid settings
-    if (apiKey && serverUrl) {
-      currentProject = figma.root.name || 'Untitled';
-      // Don't auto-start, let user choose
-    }
-  } catch (error) {
-    console.error('Error loading settings:', error);
-    figma.ui.postMessage({
-      type: 'settings-loaded',
-      settings: { apiKey: '', serverUrl: 'https://hackatime.hackclub.com' }
-    });
-  }
-}
-
-async function testConnection(testSettings) {
+async function testConnection(settings) {
   figma.ui.postMessage({ type: 'testing-connection' });
   
   try {
-    const response = await fetch(`${testSettings.serverUrl}/api/v1/users/current`, {
+    console.log('Testing connection to:', settings.serverUrl);
+    
+    const response = await fetch(`${settings.serverUrl}/api/v1/users/current`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${testSettings.apiKey}`,
-        'Content-Type': 'application/json'
+        'Authorization': `Bearer ${settings.apiKey}`,
+        'Content-Type': 'application/json',
+        'User-Agent': 'Figma-Hackatime-Plugin/1.0'
       }
     });
     
     if (response.ok) {
+      const userData = await response.json();
       figma.ui.postMessage({
         type: 'connection-tested',
         success: true,
-        message: 'Connection successful!'
+        message: `Connected successfully! Welcome ${userData.username || 'user'}`
       });
     } else {
-      const errorText = await response.text();
+      let errorMessage = `HTTP ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch (e) {
+        errorMessage = await response.text() || errorMessage;
+      }
+      
       figma.ui.postMessage({
         type: 'connection-tested',
         success: false,
-        message: `Connection failed: ${response.status} ${errorText}`
+        message: `Connection failed: ${errorMessage}`
       });
     }
   } catch (error) {
+    console.error('Network error during test:', error);
     figma.ui.postMessage({
       type: 'connection-tested',
       success: false,
@@ -114,7 +131,7 @@ async function testConnection(testSettings) {
   }
 }
 
-async function startTracking(trackingSettings) {
+async function startTracking(settings) {
   try {
     if (isTracking) {
       figma.ui.postMessage({
@@ -124,26 +141,37 @@ async function startTracking(trackingSettings) {
       return;
     }
     
-    // Save and use the provided settings
-    await saveSettings(trackingSettings);
+    // Save settings first
+    await saveSettings(settings);
     
+    // Update local variables
+    apiKey = settings.apiKey;
+    serverUrl = settings.serverUrl;
+    
+    // Start tracking
     isTracking = true;
     sessionStart = new Date();
     currentProject = figma.root.name || 'Untitled';
+    totalTime = 0;
     
-    // Set up event listeners
+    // Set up event listeners for activity detection
     figma.on('selectionchange', onActivity);
     figma.on('currentpagechange', onActivity);
     figma.on('documentchange', onDocumentChange);
     
-    // Start heartbeat interval
-    heartbeatInterval = setInterval(sendHeartbeat, 30000);
+    // Start heartbeat interval (every 30 seconds)
+    heartbeatInterval = setInterval(() => {
+      sendHeartbeat();
+    }, 30000);
+    
+    // Send initial heartbeat
+    sendHeartbeat();
     
     figma.ui.postMessage({
       type: 'tracking-started'
     });
     
-    console.log(`Started tracking: ${currentProject}`);
+    console.log(`Started tracking project: ${currentProject}`);
     
   } catch (error) {
     console.error('Error starting tracking:', error);
@@ -154,145 +182,200 @@ async function startTracking(trackingSettings) {
   }
 }
 
-function stopTracking() {
-  if (!isTracking) return;
-  
-  isTracking = false;
-  
-  // Clear interval
-  if (heartbeatInterval) {
-    clearInterval(heartbeatInterval);
-    heartbeatInterval = null;
+async function stopTracking() {
+  try {
+    if (!isTracking) {
+      figma.ui.postMessage({
+        type: 'error',
+        message: 'Not currently tracking'
+      });
+      return;
+    }
+    
+    isTracking = false;
+    
+    // Clear interval
+    if (heartbeatInterval) {
+      clearInterval(heartbeatInterval);
+      heartbeatInterval = null;
+    }
+    
+    // Remove event listeners
+    figma.off('selectionchange', onActivity);
+    figma.off('currentpagechange', onActivity);
+    figma.off('documentchange', onDocumentChange);
+    
+    // Send final heartbeat
+    if (sessionStart && apiKey) {
+      await sendHeartbeat();
+    }
+    
+    figma.ui.postMessage({
+      type: 'tracking-stopped'
+    });
+    
+    console.log('Stopped tracking');
+    
+  } catch (error) {
+    console.error('Error stopping tracking:', error);
+    figma.ui.postMessage({
+      type: 'error',
+      message: 'Error stopping tracking: ' + error.message
+    });
   }
-  
-  // Remove event listeners
-  figma.off('selectionchange', onActivity);
-  figma.off('currentpagechange', onActivity);
-  figma.off('documentchange', onDocumentChange);
-  
-  // Send final heartbeat
-  if (sessionStart) {
-    sendHeartbeat();
-  }
-  
-  figma.ui.postMessage({
-    type: 'tracking-stopped'
-  });
-  
-  console.log('Stopped tracking');
 }
 
-async function saveSettings(newSettings) {
+async function saveSettings(settings) {
   try {
-    await figma.clientStorage.setAsync('hackatime_api_key', newSettings.apiKey);
-    await figma.clientStorage.setAsync('hackatime_server_url', newSettings.serverUrl);
-    
-    settings = { ...newSettings };
-    apiKey = newSettings.apiKey;
-    serverUrl = newSettings.serverUrl;
+    await figma.clientStorage.setAsync('hackatime_api_key', settings.apiKey);
+    await figma.clientStorage.setAsync('hackatime_server_url', settings.serverUrl);
     
     figma.ui.postMessage({
       type: 'settings-saved'
     });
+    
+    console.log('Settings saved successfully');
   } catch (error) {
     console.error('Error saving settings:', error);
     figma.ui.postMessage({
       type: 'error',
-      message: 'Failed to save settings'
+      message: 'Failed to save settings: ' + error.message
     });
   }
 }
 
 function onActivity() {
-  if (!isTracking) return;
+  if (!isTracking || !sessionStart) return;
   
   // Reset session timer when user is active
   sessionStart = new Date();
   
+  // Notify UI of activity
   figma.ui.postMessage({
-    type: 'heartbeat-sent',
-    message: currentProject,
-    category: 'designing'
+    type: 'activity-detected',
+    project: currentProject,
+    time: new Date().toLocaleTimeString()
   });
 }
 
 function onDocumentChange() {
   if (!isTracking) return;
   
-  // Send heartbeat for current project
-  sendHeartbeat();
-  
-  // Update project name
-  const newProject = figma.root.name || 'Untitled';
-  if (newProject !== currentProject) {
-    currentProject = newProject;
-    sessionStart = new Date();
-    console.log(`Switched to: ${currentProject}`);
+  try {
+    // Send heartbeat for current project before switching
+    if (sessionStart && apiKey) {
+      sendHeartbeat();
+    }
+    
+    // Update to new project
+    const newProject = figma.root.name || 'Untitled';
+    if (newProject !== currentProject) {
+      currentProject = newProject;
+      sessionStart = new Date();
+      console.log(`Document changed to: ${currentProject}`);
+      
+      figma.ui.postMessage({
+        type: 'project-changed',
+        project: currentProject
+      });
+    }
+  } catch (error) {
+    console.error('Error handling document change:', error);
   }
 }
 
-function sendHeartbeat() {
-  if (!isTracking || !sessionStart || !apiKey) return;
+async function sendHeartbeat() {
+  if (!isTracking || !sessionStart || !apiKey || !serverUrl) {
+    console.log('Skipping heartbeat - missing requirements');
+    return;
+  }
   
-  const now = new Date();
-  const sessionTime = Math.floor((now - sessionStart) / 1000); // seconds
-  
-  // Only send if user was active in last 2 minutes
-  if (sessionTime < 120) {
+  try {
+    const now = new Date();
+    const sessionTime = Math.floor((now - sessionStart) / 1000); // seconds
+    
+    // Only send if user was active in last 2 minutes (120 seconds)
+    if (sessionTime >= 120) {
+      console.log('Skipping heartbeat - no recent activity');
+      return;
+    }
+    
     totalTime += sessionTime;
     
-    const data = {
-      time: Math.floor(now.getTime() / 1000),
+    // Prepare heartbeat data
+    const heartbeatData = {
+      time: Math.floor(now.getTime() / 1000), // Unix timestamp
       project: currentProject,
       language: 'Figma',
       editor: 'Figma Desktop',
-      operating_system: figma.viewport ? 'Desktop' : 'Web',
+      operating_system: getOperatingSystem(),
       machine: 'figma-user',
-      user_agent: 'Figma Plugin Hackatime',
+      user_agent: 'Figma-Hackatime-Plugin/1.0',
       branch: 'main',
       entity: currentProject,
       type: 'file',
-      category: 'designing'
+      category: 'designing',
+      is_write: true,
+      lines: 1
     };
     
-    sendToHackatime(data);
-    sessionStart = new Date(); // Reset timer
-  }
-}
-
-async function sendToHackatime(data) {
-  if (!apiKey || !serverUrl) return;
-  
-  try {
+    console.log('Sending heartbeat:', heartbeatData);
+    
     const response = await fetch(`${serverUrl}/api/v1/users/current/heartbeats`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'User-Agent': 'Figma-Hackatime-Plugin/1.0'
       },
-      body: JSON.stringify(data)
+      body: JSON.stringify(heartbeatData)
     });
     
     if (response.ok) {
-      console.log('Time logged:', Math.floor(totalTime / 60), 'minutes');
+      console.log(`Heartbeat sent successfully. Total time: ${Math.floor(totalTime / 60)} minutes`);
+      
       figma.ui.postMessage({
-        type: 'heartbeat-sent',
-        message: `Logged ${Math.floor(sessionTime)} seconds to ${currentProject}`,
-        category: 'designing'
+        type: 'heartbeat-success',
+        message: `Logged ${sessionTime}s to ${currentProject}`,
+        totalMinutes: Math.floor(totalTime / 60)
       });
     } else {
-      const errorText = await response.text();
-      console.error('Failed to send heartbeat:', response.status, errorText);
+      let errorMessage = `HTTP ${response.status}`;
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch (e) {
+        errorMessage = await response.text() || errorMessage;
+      }
+      
+      console.error('Heartbeat failed:', errorMessage);
       figma.ui.postMessage({
         type: 'heartbeat-error',
-        message: `API error: ${response.status}`
+        message: `Failed to log time: ${errorMessage}`
       });
     }
+    
+    // Reset session timer
+    sessionStart = new Date();
+    
   } catch (error) {
-    console.error('Network error sending heartbeat:', error);
+    console.error('Error sending heartbeat:', error);
     figma.ui.postMessage({
       type: 'heartbeat-error',
-      message: 'Network error'
+      message: `Network error: ${error.message}`
     });
   }
 }
+
+function getOperatingSystem() {
+  // Try to detect OS from available Figma APIs
+  if (typeof navigator !== 'undefined' && navigator.platform) {
+    if (navigator.platform.indexOf('Mac') !== -1) return 'macOS';
+    if (navigator.platform.indexOf('Win') !== -1) return 'Windows';
+    if (navigator.platform.indexOf('Linux') !== -1) return 'Linux';
+  }
+  return 'Desktop';
+}
+
+// Initialize the plugin when it loads
+init();
