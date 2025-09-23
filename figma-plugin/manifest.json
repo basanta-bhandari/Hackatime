@@ -6,12 +6,15 @@
   "ui": "index.html",
   "capabilities": [],
   "enableProposedApi": false,
+  "containsWidget": false,
   "editorType": [
-    "figma"
+    "figma",
+    "figjam"
   ],
   "networkAccess": {
     "allowedDomains": [
       "https://hackatime.hackclub.com",
+      "https://api.hackatime.com",
       "https://*.hackclub.com"
     ],
     "reasoning": "Plugin needs to send activity data to Hackatime server for time tracking"
