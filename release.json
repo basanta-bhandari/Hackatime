@@ -1,0 +1,9 @@
+{
+  "tag_name": "v1.0.0",
+  "target_commitish": "main",
+  "name": "v1.0.0",
+  "body": "### What's new\n- Initial stable release\n- Includes full plugin functionality as described in README\n\n### Notes\n- Compatible with latest version of Hackatime plugin for figma desktop\n- See README for installation & usage instructions.",
+  "draft": false,
+  "prerelease": false,
+  "generate_release_notes": true
+}
