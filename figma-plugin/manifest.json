@@ -4,7 +4,7 @@
   "api": "1.0.0",
   "main": "script.js",
   "ui": "index.html",
-  "capabilities": [],
+  "capabilities": ["inspect_tokens"],
   "enableProposedApi": false,
   "editorType": [
     "figma",
@@ -16,5 +16,12 @@
       "https://*.hackclub.com"
     ],
     "reasoning": "Plugin needs to send activity data to Hackatime server for time tracking"
-  }
+  },
+  "permissions": [
+    "activeusers",
+    "currentuser"
+  ],
+  "relaunchButtons": [
+    {"command": "edit", "name": "Configure Hackatime"}
+  ]
 }

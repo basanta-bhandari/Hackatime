@@ -328,6 +328,21 @@
       padding: 40px 20px;
       color: #666;
     }
+
+    .network-status {
+      font-size: 12px;
+      color: #666;
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    .network-status.online {
+      color: #16a34a;
+    }
+
+    .network-status.offline {
+      color: #ef4444;
+    }
   </style>
 </head>
 <body>
@@ -405,7 +420,7 @@
         <div class="help-title">Quick Setup</div>
         <div class="help-steps">
           <ol>
-            <li>Visit <a href="#" class="help-link">hackatime.hackclub.com</a></li>
+            <li>Visit <a href="https://hackatime.hackclub.com" class="help-link" target="_blank">hackatime.hackclub.com</a></li>
             <li>Create account or sign in</li>
             <li>Copy API key from Settings</li>
             <li>Paste above and test connection</li>
@@ -416,9 +431,13 @@
 
       <div class="footer">
         <div class="footer-text">
-          Made by <a href="#" class="footer-link">Basanta Bhandari</a><br>
-          <a href="#" class="footer-link">bhandari.basanta.47@gmail.com</a>
+          Made by Basanta Bhandari<br>
+          <a href="mailto:bhandari.basanta.47@gmail.com" class="footer-link">bhandari.basanta.47@gmail.com</a>
         </div>
+      </div>
+
+      <div class="network-status" id="networkStatus">
+        Online
       </div>
     </div>
   </div>
@@ -426,14 +445,23 @@
   <script>
     let isTracking = false;
     let currentSettings = { apiKey: '', serverUrl: 'https://hackatime.hackclub.com' };
+    let autoSaveTimeout = null;
+    let isOnline = navigator.onLine;
 
-    // Initialize when page loads
     window.addEventListener('load', function() {
       console.log('UI loaded, requesting settings...');
       parent.postMessage({ pluginMessage: { type: 'get-settings' } }, '*');
+      
+      // Set initial network status
+      const networkStatus = document.getElementById('networkStatus');
+      if (networkStatus) {
+        isOnline = navigator.onLine;
+        networkStatus.textContent = isOnline ? 'Online' : 'Offline';
+        networkStatus.classList.toggle('online', isOnline);
+        networkStatus.classList.toggle('offline', !isOnline);
+      }
     });
 
-    // Handle messages from plugin
     window.addEventListener('message', function(event) {
       const msg = event.data.pluginMessage;
       if (!msg) return;
@@ -444,58 +472,89 @@
         case 'settings-loaded':
           handleSettingsLoaded(msg.settings);
           break;
-
         case 'testing-connection':
           handleTestingConnection();
           break;
-
         case 'connection-tested':
           handleConnectionTested(msg.success, msg.message);
           break;
-
         case 'tracking-started':
           handleTrackingStarted();
           break;
-
         case 'tracking-stopped':
           handleTrackingStopped();
           break;
-
         case 'settings-saved':
           handleSettingsSaved();
           break;
-
         case 'activity-detected':
           handleActivityDetected(msg.project, msg.time);
           break;
-
         case 'project-changed':
           handleProjectChanged(msg.project);
           break;
-
         case 'heartbeat-success':
           handleHeartbeatSuccess(msg.message, msg.totalMinutes);
           break;
-
         case 'heartbeat-error':
           handleHeartbeatError(msg.message);
           break;
-
         case 'error':
           handleError(msg.message);
           break;
-
         default:
           console.log('Unknown message type:', msg.type);
       }
     });
+
+    window.addEventListener('online', () => {
+      isOnline = true;
+      const networkStatus = document.getElementById('networkStatus');
+      if (networkStatus) {
+        networkStatus.textContent = 'Online';
+        networkStatus.classList.add('online');
+        networkStatus.classList.remove('offline');
+      }
+      showNotification('Connection restored', 'success');
+    });
+
+    window.addEventListener('offline', () => {
+      isOnline = false;
+      const networkStatus = document.getElementById('networkStatus');
+      if (networkStatus) {
+        networkStatus.textContent = 'Offline';
+        networkStatus.classList.add('offline');
+        networkStatus.classList.remove('online');
+      }
+      showNotification('Connection lost', 'error');
+    });
+
+    document.getElementById('apiKey').addEventListener('input', debounceAutoSave);
+    document.getElementById('serverUrl').addEventListener('input', debounceAutoSave);
+
+    window.addEventListener('beforeunload', () => {
+      if (autoSaveTimeout) {
+        clearTimeout(autoSaveTimeout);
+        if (validateForm()) {
+          saveSettings();
+        }
+      }
+    });
+
+    function debounceAutoSave() {
+      if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
+      autoSaveTimeout = setTimeout(() => {
+        if (validateForm()) {
+          saveSettings();
+        }
+      }, 1000);
+    }
 
     function handleSettingsLoaded(settings) {
       currentSettings = settings;
       document.getElementById('apiKey').value = settings.apiKey || '';
       document.getElementById('serverUrl').value = settings.serverUrl || 'https://hackatime.hackclub.com';
       
-      // Hide loading, show main content
       document.getElementById('loadingState').classList.add('hidden');
       document.getElementById('mainContent').classList.remove('hidden');
       
@@ -562,12 +621,26 @@
     }
 
     function handleError(message) {
-      showNotification(message, 'error');
+      // Clean up any HTML content from error messages
+      const cleanMessage = message.replace(/<[^>]*>/g, '');
+      
+      // Format common error messages to be more user-friendly
+      let userMessage = cleanMessage;
+      if (cleanMessage.includes('404')) {
+        userMessage = 'Could not connect to the server. Please check the server URL.';
+      } else if (cleanMessage.includes('401') || cleanMessage.includes('403')) {
+        userMessage = 'Invalid API key. Please check your API key and try again.';
+      } else if (cleanMessage.includes('timeout')) {
+        userMessage = 'Connection timed out. Please check your internet connection and try again.';
+      } else if (cleanMessage.includes('NetworkError') || cleanMessage.includes('Failed to fetch')) {
+        userMessage = 'Network error. Please check your internet connection and try again.';
+      }
+      
+      showNotification(userMessage, 'error');
       setButtonLoading('startBtn', false, 'Start Tracking');
       setButtonLoading('testBtn', false, 'Test Connection');
     }
 
-    // Validation functions
     function validateApiKey() {
       const input = document.getElementById('apiKey');
       const value = input.value.trim();
@@ -594,7 +667,19 @@
       }
       
       try {
-        new URL(value);
+        const url = new URL(value);
+        
+        // Check if it's a valid Hackatime API URL
+        if (!url.protocol.startsWith('https')) {
+          setFieldState('serverUrl', 'invalid', 'HTTPS protocol is required');
+          return false;
+        }
+        
+        if (!url.hostname.includes('hackclub.com') && !url.hostname.includes('hackatime')) {
+          setFieldState('serverUrl', 'invalid', 'Invalid Hackatime server URL');
+          return false;
+        }
+        
         setFieldState('serverUrl', 'valid', 'Valid URL');
         return true;
       } catch {
@@ -609,7 +694,6 @@
       return apiKeyValid && serverUrlValid;
     }
 
-    // UI helper functions
     function setFieldState(fieldId, state, message = '') {
       const input = document.getElementById(fieldId);
       const help = document.getElementById(fieldId + 'Help');
@@ -618,38 +702,58 @@
       
       input.classList.remove('valid', 'invalid');
       
-      if (state === 'valid') {
-        input.classList.add('valid');
-        help.textContent = message || help.textContent;
-        help.className = 'field-success';
-      } else if (state === 'invalid') {
-        input.classList.add('invalid');
-        help.textContent = message;
-        help.className = 'field-error';
+      if (state === 'valid' || state === 'invalid') {
+        input.classList.add(state);
+        help.textContent = message || help.getAttribute('data-default-text') || '';
+        help.className = `field-${state === 'valid' ? 'success' : 'error'}`;
       } else {
+        help.textContent = help.getAttribute('data-default-text') || '';
         help.className = 'field-help';
       }
     }
 
-    function setButtonLoading(btnId, loading, text) {
-      const btn = document.getElementById(btnId);
-      if (!btn) return;
+    function setButtonLoading(buttonId, isLoading, defaultText) {
+      const button = document.getElementById(buttonId);
+      if (!button) return;
       
-      btn.disabled = loading;
-      
-      if (loading) {
-        btn.innerHTML = `<span class="spinner"></span>${text}`;
+      button.disabled = isLoading;
+      if (isLoading) {
+        button.innerHTML = '<div class="spinner"></div>';
       } else {
-        btn.textContent = text;
+        button.textContent = defaultText;
       }
     }
 
-    function showNotification(message, type) {
+    function updateTrackingUI(isTracking) {
+      const startBtn = document.getElementById('startBtn');
+      const stopBtn = document.getElementById('stopBtn');
+      const statusCard = document.getElementById('statusCard');
+      const statusDot = document.getElementById('statusDot');
+      const statusLabel = document.getElementById('statusLabel');
+      
+      if (isTracking) {
+        startBtn.classList.add('hidden');
+        stopBtn.classList.remove('hidden');
+        statusCard.classList.add('tracking');
+        statusDot.classList.add('active');
+        statusLabel.classList.add('active');
+        statusLabel.innerHTML = '<span class="status-dot active"></span>Tracking active';
+      } else {
+        startBtn.classList.remove('hidden');
+        stopBtn.classList.add('hidden');
+        statusCard.classList.remove('tracking');
+        statusDot.classList.remove('active');
+        statusLabel.classList.remove('active');
+        statusLabel.innerHTML = '<span class="status-dot"></span>Not tracking';
+      }
+    }
+
+    function showNotification(message, type = 'info') {
       const notification = document.getElementById('notification');
       if (!notification) return;
       
-      notification.className = `notification ${type}`;
       notification.textContent = message;
+      notification.className = `notification ${type}`;
       notification.style.display = 'block';
       
       setTimeout(() => {
@@ -657,46 +761,17 @@
       }, 5000);
     }
 
-    function updateTrackingUI(tracking) {
-      const card = document.getElementById('statusCard');
-      const label = document.getElementById('statusLabel');
-      const startBtn = document.getElementById('startBtn');
-      const stopBtn = document.getElementById('stopBtn');
+    function updateActivity(message, type = 'info') {
+      const activityText = document.getElementById('activityText');
+      if (!activityText) return;
       
-      if (!card || !label || !startBtn || !stopBtn) return;
-      
-      if (tracking) {
-        card.className = 'status-card tracking';
-        label.className = 'status-label active';
-        label.innerHTML = '<span class="status-dot active"></span>Tracking active';
-        startBtn.classList.add('hidden');
-        stopBtn.classList.remove('hidden');
-      } else {
-        card.className = 'status-card';
-        label.className = 'status-label';
-        label.innerHTML = '<span class="status-dot"></span>Not tracking';
-        startBtn.classList.remove('hidden');
-        stopBtn.classList.add('hidden');
-      }
+      activityText.textContent = message;
+      activityText.className = `activity-text ${type}`;
     }
 
-    function updateActivity(message, category) {
-      const activity = document.getElementById('activityText');
-      if (!activity) return;
-      
-      const timestamp = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-      activity.textContent = `${timestamp} - ${message}`;
-      
-      // Add some visual feedback based on category
-      activity.style.color = category === 'error' ? '#dc2626' : 
-                           category === 'success' ? '#16a34a' : 
-                           category === 'info' ? '#2563eb' : '#888';
-    }
-
-    // Action functions
     function testConnection() {
       if (!validateForm()) {
-        showNotification('Please fix the errors above', 'error');
+        showNotification('Please fix the errors before testing connection', 'error');
         return;
       }
       
@@ -707,19 +782,17 @@
       
       parent.postMessage({ 
         pluginMessage: { 
-          type: 'test-connection', 
-          settings: settings 
+          type: 'test-connection',
+          settings: settings
         } 
       }, '*');
     }
 
     function startTracking() {
       if (!validateForm()) {
-        showNotification('Please configure your settings first', 'error');
+        showNotification('Please fix the errors before starting tracking', 'error');
         return;
       }
-      
-      setButtonLoading('startBtn', true, 'Starting...');
       
       const settings = {
         apiKey: document.getElementById('apiKey').value.trim(),
@@ -728,19 +801,23 @@
       
       parent.postMessage({ 
         pluginMessage: { 
-          type: 'start-tracking', 
-          settings: settings 
+          type: 'start-tracking',
+          settings: settings
         } 
       }, '*');
     }
 
     function stopTracking() {
-      parent.postMessage({ pluginMessage: { type: 'stop-tracking' } }, '*');
+      parent.postMessage({ 
+        pluginMessage: { 
+          type: 'stop-tracking'
+        } 
+      }, '*');
     }
 
     function saveSettings() {
       if (!validateForm()) {
-        showNotification('Please fix the errors first', 'error');
+        showNotification('Please fix the errors before saving settings', 'error');
         return;
       }
       
@@ -751,27 +828,11 @@
       
       parent.postMessage({ 
         pluginMessage: { 
-          type: 'save-settings', 
-          settings: settings 
+          type: 'save-settings',
+          settings: settings
         } 
       }, '*');
     }
-
-    // Add live validation
-    document.addEventListener('DOMContentLoaded', function() {
-      const apiKeyInput = document.getElementById('apiKey');
-      const serverUrlInput = document.getElementById('serverUrl');
-      
-      if (apiKeyInput) {
-        apiKeyInput.addEventListener('input', validateApiKey);
-        apiKeyInput.addEventListener('blur', validateApiKey);
-      }
-      
-      if (serverUrlInput) {
-        serverUrlInput.addEventListener('input', validateServerUrl);
-        serverUrlInput.addEventListener('blur', validateServerUrl);
-      }
-    });
   </script>
 </body>
 </html>

@@ -8,6 +8,8 @@ A Figma plugin that automatically tracks your design time and sends it to [Hacka
 - **Smart Activity Detection**: Only logs time when you're actively working
 - **Project-Based Tracking**: Automatically detects and tracks different Figma documents
 - **Real-time Heartbeats**: Sends activity data every 30 seconds when active
+- **Network Status**: Shows online/offline status and auto-reconnects
+- **Auto-save**: Settings are automatically saved as you type
 - **Privacy Focused**: Only tracks time and project names, no sensitive design data
 - **Clean UI**: Beautiful, minimal interface that matches Figma's design language
 
@@ -27,6 +29,22 @@ A Figma plugin that automatically tracks your design time and sends it to [Hacka
    ```
 
 2. In Figma, go to **Plugins** → **Development** → **Import plugin from manifest**
+3. Select the `manifest.json` file from the `figma-plugin` directory
+
+## Setup
+
+1. Visit [hackatime.hackclub.com](https://hackatime.hackclub.com)
+2. Create an account or sign in
+3. Go to Settings and copy your API key
+4. In Figma, open the Hackatime plugin
+5. Paste your API key
+6. Click "Test Connection" to verify
+7. Click "Start Tracking" to begin tracking your design time
+
+### Network Requirements
+- Requires HTTPS connection
+- Needs access to `*.hackclub.com` domains
+- Will show online/offline status in the plugin UI
 
 3. Select the `manifest.json` file from this project
 
