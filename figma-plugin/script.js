@@ -83,7 +83,7 @@ async function testConnection(settings) {
   try {
     console.log('Testing connection to:', settings.serverUrl);
     
-    const response = await fetch(`${settings.serverUrl}/api/v1/users/current`, {
+    const response = await fetch(`${settings.serverUrl}/api/hackatime/v1/users/current`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${settings.apiKey}`,
@@ -299,7 +299,7 @@ async function sendHeartbeat() {
     
     console.log('Sending heartbeat:', heartbeatData);
     
-    const response = await fetch(`${serverUrl}/api/v1/users/current/heartbeats`, {
+    const response = await fetch(`${serverUrl}/api/hackatime/v1/users/current/heartbeats`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
