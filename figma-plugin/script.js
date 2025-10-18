@@ -77,24 +77,22 @@ figma.ui.onmessage = async (msg) => {
   }
 };
 
-    async function testConnection(settings) {
-      figma.ui.postMessage({ type: 'testing-connection' });
-      
-      try {
-        console.log('Testing connection to:', settings.serverUrl);
-        
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-        
-        const response = await fetch(`${settings.serverUrl}/api/v1/users/current`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${settings.apiKey}`,
-            'Content-Type': 'application/json',
-            'User-Agent': 'Figma-Hackatime-Plugin/1.0'
-          },
-          signal: controller.signal
-        });    if (response.ok) {
+async function testConnection(settings) {
+  figma.ui.postMessage({ type: 'testing-connection' });
+  
+  try {
+    console.log('Testing connection to:', settings.serverUrl);
+    
+    const response = await fetch(`${settings.serverUrl}/api/v1/users/current`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${settings.apiKey}`,
+        'Content-Type': 'application/json',
+        'User-Agent': 'Figma-Hackatime-Plugin/1.0'
+      }
+    });
+    
+    if (response.ok) {
       const userData = await response.json();
       figma.ui.postMessage({
         type: 'connection-tested',
@@ -151,16 +149,13 @@ async function startTracking(settings) {
     figma.on('documentchange', onDocumentChange);
     
     heartbeatInterval = setInterval(() => {
-      if (figma.currentPage) {  // Check if we have access to the document
-        sendHeartbeat();
-      }
+      sendHeartbeat();
     }, 30000);
     
     sendHeartbeat();
     
     figma.ui.postMessage({
-      type: 'tracking-started',
-      project: currentProject
+      type: 'tracking-started'
     });
     
     console.log(`Started tracking project: ${currentProject}`);
@@ -304,7 +299,7 @@ async function sendHeartbeat() {
     
     console.log('Sending heartbeat:', heartbeatData);
     
-    const response = await fetchWithRetry(`${serverUrl}/api/v1/users/current/heartbeats`, {
+    const response = await fetch(`${serverUrl}/api/v1/users/current/heartbeats`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -356,46 +351,6 @@ function getOperatingSystem() {
     if (navigator.platform.indexOf('Linux') !== -1) return 'Linux';
   }
   return 'Desktop';
-}
-
-async function fetchWithRetry(url, options, maxRetries = 3) {
-  let lastError;
-  
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
-      
-      const response = await fetch(url, {
-        ...options,
-        signal: controller.signal
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: `HTTP ${response.status}` }));
-        throw new Error(errorData.message || errorData.error || `HTTP ${response.status}`);
-      }
-      
-      return response;
-    } catch (error) {
-      lastError = error;
-      
-      if (attempt === maxRetries) {
-        throw error;
-      }
-      
-      // Exponential backoff
-      await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
-    }
-  }
-  
-  throw lastError;
-}
-
-function isOnline() {
-  return navigator.onLine;
 }
 
 init();
