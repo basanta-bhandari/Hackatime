@@ -282,19 +282,17 @@ async function sendHeartbeat() {
     totalTime += sessionTime;
     
     const heartbeatData = {
+      entity: currentProject,
+      type: 'app',
+      category: 'designing',
       time: Math.floor(now.getTime() / 1000),
       project: currentProject,
       language: 'Figma',
-      editor: 'Figma Desktop',
+      editor: 'Figma',
       operating_system: getOperatingSystem(),
-      machine: 'figma-user',
-      user_agent: 'Figma-Hackatime-Plugin/1.0',
-      branch: 'main',
-      entity: currentProject,
-      type: 'file',
-      category: 'designing',
-      is_write: true,
-      lines: 1
+      machine: getHostname(),
+      user_agent: 'Figma/1.0',
+      is_write: true
     };
     
     console.log('Sending heartbeat:', heartbeatData);
@@ -304,7 +302,7 @@ async function sendHeartbeat() {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'User-Agent': 'Figma-Hackatime-Plugin/1.0'
+        'User-Agent': 'Figma-Hackatime/1.0'
       },
       body: JSON.stringify(heartbeatData)
     });
@@ -345,12 +343,15 @@ async function sendHeartbeat() {
 }
 
 function getOperatingSystem() {
-  if (typeof navigator !== 'undefined' && navigator.platform) {
-    if (navigator.platform.indexOf('Mac') !== -1) return 'macOS';
-    if (navigator.platform.indexOf('Win') !== -1) return 'Windows';
-    if (navigator.platform.indexOf('Linux') !== -1) return 'Linux';
-  }
-  return 'Desktop';
+  const platform = typeof navigator !== 'undefined' ? navigator.platform : '';
+  if (platform.indexOf('Mac') !== -1) return 'macOS';
+  if (platform.indexOf('Win') !== -1) return 'Windows';
+  if (platform.indexOf('Linux') !== -1) return 'Linux';
+  return 'Unknown';
+}
+
+function getHostname() {
+  return 'figma-desktop';
 }
 
 init();
