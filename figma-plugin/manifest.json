@@ -4,24 +4,14 @@
   "api": "1.0.0",
   "main": "script.js",
   "ui": "index.html",
-  "capabilities": ["inspect_tokens"],
-  "enableProposedApi": false,
   "editorType": [
     "figma",
     "figjam"
   ],
   "networkAccess": {
     "allowedDomains": [
-      "https://hackatime.hackclub.com",
-      "https://*.hackclub.com"
+      "https://hackatime.hackclub.com"
     ],
     "reasoning": "Plugin needs to send activity data to Hackatime server for time tracking"
-  },
-  "permissions": [
-    "activeusers",
-    "currentuser"
-  ],
-  "relaunchButtons": [
-    {"command": "edit", "name": "Configure Hackatime"}
-  ]
+  }
 }
