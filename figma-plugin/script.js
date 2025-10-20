@@ -88,7 +88,7 @@ async function testConnection(settings) {
       headers: {
         'Authorization': `Bearer ${settings.apiKey}`,
         'Content-Type': 'application/json',
-        'User-Agent': 'Figma-Hackatime-Plugin/1.0'
+        'User-Agent': 'Figma-Hackatime/1.0'
       }
     });
     
@@ -288,10 +288,10 @@ async function sendHeartbeat() {
       time: Math.floor(now.getTime() / 1000),
       project: currentProject,
       language: 'Figma',
-      editor: 'Figma',
+      editor: 'Figma-desktop',
       operating_system: getOperatingSystem(),
       machine: getHostname(),
-      user_agent: 'Figma/1.0',
+      user_agent: 'Figma-desktop',
       is_write: true
     };
     
