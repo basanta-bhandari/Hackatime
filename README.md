@@ -224,5 +224,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 **Made by Basanta Bhandari**
-
-Track your design time, level up your productivity.
