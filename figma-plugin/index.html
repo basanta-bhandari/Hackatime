@@ -1,2 +1,266 @@
 <!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Hackatime</title><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Inter,-apple-system,sans-serif;background:#fff;color:#1a1a1a;font-size:14px}.container{width:420px;padding:24px}.header{text-align:center;margin-bottom:24px;border-bottom:1px solid #f0f0f0;padding-bottom:16px}.logo{font-size:18px;font-weight:700;color:#ec3750}.tagline{color:#666;font-size:12px}.status-card{background:#fafafa;border:1px solid #e8e8e8;border-radius:6px;padding:14px;margin-bottom:20px}.status-card.active{background:#f0f9f4;border-color:#22c55e}.status-label{font-size:13px;font-weight:500;color:#666}.status-label.active{color:#16a34a}.activity{font-size:11px;color:#888;font-family:monospace;margin-top:8px}.field{margin-bottom:14px}label{display:block;font-size:12px;font-weight:500;margin-bottom:6px}input{width:100%;padding:8px 10px;border:1px solid #ddd;border-radius:4px;font-size:13px}input:focus{outline:none;border-color:#ec3750}.btn{width:100%;padding:10px;border:none;border-radius:4px;font-size:13px;font-weight:500;cursor:pointer;margin-bottom:8px}.btn-primary{background:#ec3750;color:#fff}.btn-secondary{background:#f5f5f5;color:#666}.msg{padding:10px;border-radius:4px;margin-bottom:16px;font-size:12px;display:none}.msg.success{background:#f0f9f4;color:#16a34a}.msg.error{background:#fef2f2;color:#dc2626}.hidden{display:none}</style></head><body><div class="container"><div class="header"><div class="logo">Hackatime</div><div class="tagline">Track your Figma design time</div></div><div id="msg" class="msg"></div><div id="status" class="status-card"><div class="status-label" id="statusLabel">Not tracking</div><div class="activity" id="activity">Configure settings to start</div></div><div class="field"><label>API Key</label><input type="text" id="apiKey" placeholder="Your Hackatime API key"></div><div class="field"><label>Server URL</label><input type="text" id="serverUrl" value="https://hackatime.hackclub.com"></div><button class="btn btn-secondary" onclick="test()">Test Connection</button><button class="btn btn-primary" id="startBtn" onclick="start()">Start Tracking</button><button class="btn btn-secondary hidden" id="stopBtn" onclick="stop()">Stop Tracking</button></div><script>let tracking=false;window.onload=()=>parent.postMessage({pluginMessage:{type:'get-settings'}},'*');window.onmessage=e=>{const m=e.data.pluginMessage;if(!m)return;if(m.type=='settings-loaded'){document.getElementById('apiKey').value=m.settings.apiKey||'';document.getElementById('serverUrl').value=m.settings.serverUrl||'https://hackatime.hackclub.com'}else if(m.type=='connection-tested'){showMsg(m.success?'Connected!':'Failed: '+m.message,m.success?'success':'error')}else if(m.type=='tracking-started'){tracking=true;updateUI();showMsg('Tracking started!','success')}else if(m.type=='tracking-stopped'){tracking=false;updateUI();showMsg('Tracking stopped','success')}else if(m.type=='heartbeat-success'){document.getElementById('activity').textContent='Last logged: '+new Date().toLocaleTimeString()}else if(m.type=='error'){showMsg(m.message,'error')}};function test(){const s={apiKey:document.getElementById('apiKey').value.trim(),serverUrl:document.getElementById('serverUrl').value.trim()};if(!s.apiKey){showMsg('API key required','error');return}parent.postMessage({pluginMessage:{type:'test-connection',settings:s}},'*')}function start(){const s={apiKey:document.getElementById('apiKey').value.trim(),serverUrl:document.getElementById('serverUrl').value.trim()};if(!s.apiKey){showMsg('API key required','error');return}parent.postMessage({pluginMessage:{type:'start-tracking',settings:s}},'*')}function stop(){parent.postMessage({pluginMessage:{type:'stop-tracking'}},'*')}function updateUI(){const status=document.getElementById('status');const label=document.getElementById('statusLabel');const startBtn=document.getElementById('startBtn');const stopBtn=document.getElementById('stopBtn');if(tracking){status.className='status-card active';label.className='status-label active';label.textContent='Tracking active';startBtn.classList.add('hidden');stopBtn.classList.remove('hidden')}else{status.className='status-card';label.className='status-label';label.textContent='Not tracking';startBtn.classList.remove('hidden');stopBtn.classList.add('hidden')}}function showMsg(txt,type){const m=document.getElementById('msg');m.className='msg '+type;m.textContent=txt;m.style.display='block';setTimeout(()=>m.style.display='none',4000)}</script></body></html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Hackatime</title>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #ffffff;
+      color: #1a1a1a;
+      font-size: 14px;
+    }
+
+    .container {
+      width: 420px;
+      padding: 24px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .logo {
+      font-size: 18px;
+      font-weight: 700;
+      color: #ec3750;
+    }
+
+    .tagline {
+      font-size: 12px;
+      color: #666666;
+    }
+
+    .msg {
+      display: none;
+      padding: 10px;
+      margin-bottom: 16px;
+      border-radius: 4px;
+      font-size: 12px;
+    }
+
+    .msg.success {
+      background: #f0f9f4;
+      color: #16a34a;
+    }
+
+    .msg.error {
+      background: #fef2f2;
+      color: #dc2626;
+    }
+
+    .status-card {
+      padding: 14px;
+      margin-bottom: 20px;
+      background: #fafafa;
+      border: 1px solid #e8e8e8;
+      border-radius: 6px;
+    }
+
+    .status-card.active {
+      background: #f0f9f4;
+      border-color: #22c55e;
+    }
+
+    .status-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: #666666;
+    }
+
+    .status-label.active {
+      color: #16a34a;
+    }
+
+    .activity {
+      margin-top: 8px;
+      font-family: monospace;
+      font-size: 11px;
+      color: #888888;
+    }
+
+    .field {
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    input {
+      width: 100%;
+      padding: 8px 10px;
+      border: 1px solid #dddddd;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #ec3750;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 8px;
+      border: none;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: #ec3750;
+      color: #ffffff;
+    }
+
+    .btn-secondary {
+      background: #f5f5f5;
+      color: #666666;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">Hackatime</div>
+      <div class="tagline">Track your Figma design time</div>
+    </div>
+
+    <div id="msg" class="msg"></div>
+
+    <div id="status" class="status-card">
+      <div id="statusLabel" class="status-label">Not tracking</div>
+      <div id="activity" class="activity">Configure settings to start</div>
+    </div>
+
+    <div class="field">
+      <label for="apiKey">API Key</label>
+      <input id="apiKey" type="text" placeholder="Your Hackatime API key" />
+    </div>
+
+    <div class="field">
+      <label for="serverUrl">Server URL</label>
+      <input id="serverUrl" type="text" value="https://hackatime.hackclub.com" />
+    </div>
+
+    <button class="btn btn-secondary" onclick="gandalf()">Test Connection</button>
+    <button id="startBtn" class="btn btn-primary" onclick="frodo()">Start Tracking</button>
+    <button id="stopBtn" class="btn btn-secondary hidden" onclick="sauron()">Stop Tracking</button>
+  </div>
+
+  <script>
+    let tracking = false;
+
+    window.onload = () => {
+      parent.postMessage({ pluginMessage: { type: 'get-settings' } }, '*');
+    };
+
+    window.onmessage = (event) => {
+      const msg = event.data.pluginMessage;
+      if (!msg) return;
+
+      switch (msg.type) {
+        case 'settings-loaded':
+          document.getElementById('apiKey').value    = msg.settings.apiKey    || '';
+          document.getElementById('serverUrl').value = msg.settings.serverUrl || 'https://hackatime.hackclub.com';
+          break;
+        case 'connection-tested':
+          samwise(msg.success ? 'Connected!' : 'Failed: ' + msg.message, msg.success ? 'success' : 'error');
+          break;
+        case 'tracking-started':
+          tracking = true;
+          aragorn();
+          samwise('Tracking started!', 'success');
+          break;
+        case 'tracking-stopped':
+          tracking = false;
+          aragorn();
+          samwise('Tracking stopped', 'success');
+          break;
+        case 'heartbeat-success':
+          document.getElementById('activity').textContent = 'Last logged: ' + new Date().toLocaleTimeString();
+          break;
+        case 'error':
+          samwise(msg.message, 'error');
+          break;
+      }
+    };
+
+    function bilbo() {
+      const apiKey    = document.getElementById('apiKey').value.trim();
+      const serverUrl = document.getElementById('serverUrl').value.trim();
+      if (!apiKey) {
+        samwise('API key required', 'error');
+        return null;
+      }
+      return { apiKey, serverUrl };
+    }
+
+    function gandalf() {
+      const settings = bilbo();
+      if (!settings) return;
+      parent.postMessage({ pluginMessage: { type: 'test-connection', settings } }, '*');
+    }
+
+    function frodo() {
+      const settings = bilbo();
+      if (!settings) return;
+      parent.postMessage({ pluginMessage: { type: 'start-tracking', settings } }, '*');
+    }
+
+    function sauron() {
+      parent.postMessage({ pluginMessage: { type: 'stop-tracking' } }, '*');
+    }
+
+    function aragorn() {
+      const statusCard  = document.getElementById('status');
+      const statusLabel = document.getElementById('statusLabel');
+      const startBtn    = document.getElementById('startBtn');
+      const stopBtn     = document.getElementById('stopBtn');
+
+      if (tracking) {
+        statusCard.className    = 'status-card active';
+        statusLabel.className   = 'status-label active';
+        statusLabel.textContent = 'Tracking active';
+        startBtn.classList.add('hidden');
+        stopBtn.classList.remove('hidden');
+      } else {
+        statusCard.className    = 'status-card';
+        statusLabel.className   = 'status-label';
+        statusLabel.textContent = 'Not tracking';
+        startBtn.classList.remove('hidden');
+        stopBtn.classList.add('hidden');
+      }
+    }
+
+    function samwise(text, type) {
+      const el = document.getElementById('msg');
+      el.className     = 'msg ' + type;
+      el.textContent   = text;
+      el.style.display = 'block';
+      setTimeout(() => { el.style.display = 'none'; }, 4000);
+    }
+  </script>
+</body>
+</html>
