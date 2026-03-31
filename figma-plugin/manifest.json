@@ -1,6 +1,6 @@
 {
   "name": "Hackatime",
-  "id": "hackatime-plugin",
+  "id": "figma-hackatime",
   "api": "1.0.0",
   "main": "script.js",
   "ui": "index.html",

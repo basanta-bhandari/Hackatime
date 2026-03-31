@@ -9,11 +9,7 @@ Handles going offline gracefully and syncs back when you reconnect
 Saves your settings as you type ; no "save" button to forget
 
 It doesn't collect screenshots, file contents, or anything sensitive. Just timestamps, project names, and activity signals.
-Installation
-From the Figma community (easiest):
-
-Open Figma -> Plugins -> Browse all plugins
-Search "Hackatime" and install
+Installation:
 
 Manual (for development):
 bashgit clone https://github.com/basanta-bhandari/Hackatime.git
