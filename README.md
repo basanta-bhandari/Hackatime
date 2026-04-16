@@ -12,7 +12,7 @@ It doesn't collect screenshots, file contents, or anything sensitive. Just times
 
 # Installation:
 '
-bashgit clone https://github.com/basanta-bhandari/Hackatime.git
+bash git clone https://github.com/basanta-bhandari/Hackatime.git
 cd Hackatime
 '
 -Then in Figma: Plugins -> Development -> Import plugin from manifest -> pick manifest.json from the figma-plugin folder.
